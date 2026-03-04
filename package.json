@@ -1,0 +1,18 @@
+{
+  "name": "upload-dewek",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "dev:local": "wrangler dev --config wrangler.local.jsonc",
+    "deploy": "wrangler deploy --minify",
+    "deploy:local": "wrangler deploy --minify --config wrangler.local.jsonc",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "cf-typegen:local": "wrangler types --env-interface CloudflareBindings --config wrangler.local.jsonc"
+  },
+  "dependencies": {
+    "hono": "^4.12.3"
+  },
+  "devDependencies": {
+    "wrangler": "^4.4.0"
+  }
+}

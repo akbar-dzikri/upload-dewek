@@ -1,0 +1,32 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "${WORKER_NAME}",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-03-01",
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_id": "${DB_ID}",
+      "database_name": "${DB_NAME}",
+    },
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "CACHE",
+      "id": "${CACHE_KV_ID}",
+    },
+  ],
+  "r2_buckets": [
+    {
+      "binding": "ASSETS",
+      "bucket_name": "${ASSETS_R2_BUCKET}",
+    },
+  ],
+  "images": {
+    "binding": "IMAGES",
+  },
+}
