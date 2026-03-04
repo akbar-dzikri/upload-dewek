@@ -7,12 +7,14 @@
     "deploy": "wrangler deploy --minify",
     "deploy:local": "wrangler deploy --minify --config wrangler.local.jsonc",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
-    "cf-typegen:local": "wrangler types --env-interface CloudflareBindings --config wrangler.local.jsonc"
+    "cf-typegen:local": "wrangler types --env-interface CloudflareBindings --config wrangler.local.jsonc",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "hono": "^4.12.3"
   },
   "devDependencies": {
+    "prettier": "^3.8.1",
     "wrangler": "^4.4.0"
   }
 }
