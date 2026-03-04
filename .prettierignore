@@ -1,0 +1,14 @@
+.prettierrc
+.prettierignore
+
+# Dependencies
+node_modules
+
+# Build artifacts
+build
+dist
+.wrangler
+coverage
+
+# Generated files
+worker-configuration.d.ts
