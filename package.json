@@ -8,15 +8,20 @@
     "deploy:local": "wrangler deploy --minify --config wrangler.local.jsonc",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
     "cf-typegen:local": "wrangler types --env-interface CloudflareBindings --config wrangler.local.jsonc",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "wrangler d1 migrations apply",
+    "db:migrate:local": "wrangler d1 migrations apply --local",
     "format": "prettier --write .",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
+    "drizzle-orm": "^0.45.1",
     "hono": "^4.12.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.37.0",
+    "drizzle-kit": "^0.31.9",
     "eslint": "^9.37.0",
     "globals": "^16.4.0",
     "prettier": "^3.8.1",
