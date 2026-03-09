@@ -14,7 +14,7 @@ export const assets = sqliteTable(
     r2Key: text('r2_key').notNull().unique(),
     filename: text('filename').notNull(),
     mimeType: text('mime_type', {
-      enum: ['image/jpeg', 'image/png', 'image/webp', 'image/avif','image/gif', 'video/mp4'] as const,
+      enum: ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif', 'video/mp4'] as const,
     }).notNull(),
     sizeBytes: integer('size_bytes').notNull().default(0),
     status: text('status', {
