@@ -15,6 +15,7 @@ const DEFAULT_ERROR_BY_STATUS = {
   403: { message: 'Forbidden', code: 'ERR_FORBIDDEN' },
   404: { message: 'Not found', code: 'ERR_NOT_FOUND' },
   409: { message: 'Conflict', code: 'ERR_CONFLICT' },
+  422: { message: 'Validation error', code: 'ERR_VALIDATION' },
   500: { message: 'Something went wrong', code: 'ERR_INTERNAL' },
 } as const;
 
