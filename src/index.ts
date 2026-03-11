@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
-import { errorResponse, successResponse } from './lib/http/api-response';
-import { toApiError } from './lib/http/app-error';
+import { successResponse } from './lib/http/api-response';
+import { toApiError } from './lib/http/error-mapper';
+import { AppError } from './lib/core/errors';
 
 const app = new Hono();
 
@@ -11,7 +12,14 @@ app.get('/', (c) => {
 });
 
 app.notFound((c) => {
-  return errorResponse(c, 'Endpoint not found', 'ERR_NOT_FOUND', 404);
+  const err = new AppError({
+    statusCode: 404,
+    message: 'Endpoint not found',
+    code: 'ERR_NOT_FOUND',
+    expose: true,
+  });
+  const { statusCode, body } = toApiError(err);
+  return c.json(body, statusCode);
 });
 
 app.onError((error, c) => {
