@@ -59,21 +59,3 @@ export const paginatedResponse = <TItem>(
 export const noContentResponse = (c: Context) => {
   return c.body(null, 204);
 };
-
-export const errorResponse = <TErrors = null>(
-  c: Context,
-  message: string,
-  code: string,
-  statusCode: ContentfulStatusCode,
-  errors: TErrors | null = null,
-) => {
-  return c.json<ApiErrorResponse<TErrors>>(
-    {
-      status: 'error',
-      message,
-      code,
-      errors,
-    },
-    statusCode,
-  );
-};
