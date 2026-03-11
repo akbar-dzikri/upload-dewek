@@ -1,8 +1,8 @@
 import type * as z from 'zod';
 import type { ValidationTargets } from 'hono';
 import { zValidator as zv } from '@hono/zod-validator';
-import { AppError } from '../http/app-error';
-import type { ValidationErrorItem } from '../http/api-response';
+import { AppError } from '../core/errors';
+import type { ValidationIssue } from '../core/types';
 
 export const zValidator = <T extends z.ZodSchema, Target extends keyof ValidationTargets>(
   target: Target,
@@ -10,7 +10,7 @@ export const zValidator = <T extends z.ZodSchema, Target extends keyof Validatio
 ) =>
   zv(target, schema, (result) => {
     if (!result.success) {
-      const formattedIssues: ValidationErrorItem[] = result.error.issues.map((issue) => ({
+      const issues: ValidationIssue[] = result.error.issues.map((issue) => ({
         field: issue.path.join('.'),
         message: issue.message,
       }));
@@ -19,7 +19,8 @@ export const zValidator = <T extends z.ZodSchema, Target extends keyof Validatio
         statusCode: 422,
         message: 'Validation error',
         code: 'ERR_VALIDATION',
-        errors: formattedIssues,
+        errors: issues,
+        expose: true,
       });
     }
   });
