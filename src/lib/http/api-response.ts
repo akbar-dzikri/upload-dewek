@@ -10,11 +10,6 @@ export interface PaginationMeta {
   hasPrevPage: boolean;
 }
 
-export interface ValidationErrorItem {
-  field: string;
-  message: string;
-}
-
 export type ApiSuccessResponse<TData> = {
   status: 'success';
   data: TData;
