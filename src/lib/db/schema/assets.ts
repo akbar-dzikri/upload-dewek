@@ -20,12 +20,15 @@ export const assets = sqliteTable(
     status: text('status', {
       enum: ['pending', 'validated', 'rejected'] as const,
     }).notNull(), // e.g., pending, validated, rejected
+    folder: text('folder'),
+    tags: text('tags', { mode: 'json' }).$type<string[] | null>(),
     createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
     validatedAt: integer('validated_at', { mode: 'timestamp_ms' }),
   },
   (table) => [
     index('idx_assets_project_id').on(table.projectId),
     index('idx_assets_project_status_created_at').on(table.projectId, table.status, table.createdAt),
+    index('idx_assets_folder').on(table.folder),
   ],
 );
 
