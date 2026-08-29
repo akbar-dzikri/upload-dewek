@@ -2,14 +2,22 @@ import { Hono } from 'hono';
 import { successResponse } from './lib/http/api-response';
 import { toApiError } from './lib/http/error-mapper';
 import { AppError } from './lib/core/errors';
+import projectsRoute from './routes/projects';
 
-const app = new Hono();
+type AppBindings = CloudflareBindings;
+type AppVariables = {
+  auth: { keyId: string; projectId: string };
+};
+
+const app = new Hono<{ Bindings: AppBindings; Variables: AppVariables }>();
 
 app.get('/', (c) => {
   return successResponse(c, {
     message: 'Upload Dewek API is running',
   });
 });
+
+app.route('/projects', projectsRoute);
 
 app.notFound((c) => {
   const err = new AppError({
