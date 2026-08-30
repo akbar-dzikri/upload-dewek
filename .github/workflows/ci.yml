@@ -30,7 +30,7 @@ jobs:
         run: pnpm exec tsc --noEmit
 
       - name: Test
-        run: pnpm test -- --coverage
+        run: pnpm test
 
       - name: Build (Workers)
         run: pnpm exec wrangler deploy --config wrangler.deploy.jsonc --dry-run --minify
