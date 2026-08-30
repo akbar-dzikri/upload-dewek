@@ -96,3 +96,13 @@ See `SPEC.md:1` (source of truth) + `docs/ideas/upload-dewek.md:1` (one-pager) +
 ## License
 
 MIT — see `LICENSE`.
+
+## Live
+
+- **API (custom domain):** https://upload-dewek.dikicodes.com/health
+- **API (workers.dev):** https://upload-dewek.akbardzkr05.workers.dev/health
+- **Dashboard:** https://upload-dewek.dikicodes.com/ (or https://upload-dewek.akbardzkr05.workers.dev/ — same Worker via `assets` SPA fallback)
+- **Health:** `GET /health` checks D1, `GET /healthz` liveness
+
+Deployed via `wrangler deploy --config wrangler.deploy.jsonc` with `assets: dashboard/dist` (Vite) — single Worker free plan.
+
