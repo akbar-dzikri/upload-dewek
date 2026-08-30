@@ -6,6 +6,7 @@ import { confirmAsset, getAssetById, initAsset } from '../lib/assets/service';
 import { createPresignedPost } from '../lib/r2/presign';
 import { createdResponse, successResponse } from '../lib/http/api-response';
 import { authMiddleware } from '../lib/auth/middleware';
+import { AppError } from '../lib/core/errors';
 
 type Bindings = CloudflareBindings;
 type Variables = {
@@ -22,13 +23,24 @@ uploadsRoute.post('/init', zValidator('json', initUploadSchema), async (c) => {
 
   const asset = await initAsset(db, input);
 
-  const envRec = c.env as unknown as Record<string, string>;
+  const envRec = c.env as unknown as Record<string, string | undefined>;
+  const R2_ACCESS_KEY_ID = envRec.R2_ACCESS_KEY_ID;
+  const R2_SECRET_ACCESS_KEY = envRec.R2_SECRET_ACCESS_KEY;
+  const R2_BUCKET = envRec.R2_BUCKET;
+  const R2_ENDPOINT = envRec.R2_ENDPOINT;
+  if (R2_ACCESS_KEY_ID === undefined || R2_SECRET_ACCESS_KEY === undefined || R2_BUCKET === undefined) {
+    // In tests, allow fallback via envRec test values; in prod fail closed
+    const isTest = (c.env as unknown as { ENVIRONMENT?: string }).ENVIRONMENT === 'test' || R2_BUCKET === 'test-bucket';
+    if (!isTest) {
+      throw new AppError({ statusCode: 500, code: 'ERR_INTERNAL', message: 'R2 not configured', expose: false });
+    }
+  }
   const presigned = await createPresignedPost(
     {
-      R2_ACCESS_KEY_ID: envRec.R2_ACCESS_KEY_ID ?? 'test-access-key-id-test-access-key-id-test12',
-      R2_SECRET_ACCESS_KEY: envRec.R2_SECRET_ACCESS_KEY ?? 'test-secret-access-key-test-secret-access-key-test12',
-      R2_BUCKET: envRec.R2_BUCKET ?? 'test-bucket',
-      R2_ENDPOINT: envRec.R2_ENDPOINT,
+      R2_ACCESS_KEY_ID: R2_ACCESS_KEY_ID ?? 'test-access-key-id-test-access-key-id-test12',
+      R2_SECRET_ACCESS_KEY: R2_SECRET_ACCESS_KEY ?? 'test-secret-access-key-test-secret-access-key-test12',
+      R2_BUCKET: R2_BUCKET ?? 'test-bucket',
+      R2_ENDPOINT,
     },
     asset.r2Key,
     input.mimeType,

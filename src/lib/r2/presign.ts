@@ -18,8 +18,7 @@ const DEFAULT_EXPIRES = 900; // 15m
 export const createPresignedPost = async (
   env: R2Env,
   r2Key: string,
-  // mimeType kept for future scoping (policy), not used in query-signed PUT v1
-  _mimeType: string,
+  mimeType: string,
   expiresSeconds = DEFAULT_EXPIRES,
 ): Promise<PresignedPost> => {
   if (!env.R2_ACCESS_KEY_ID || !env.R2_SECRET_ACCESS_KEY || !env.R2_BUCKET) {
@@ -36,9 +35,15 @@ export const createPresignedPost = async (
     service: 's3',
   });
 
-  const signed = await client.sign(new Request(urlBase, { method: 'PUT' }), {
-    aws: { signQuery: true },
-  });
+  const signed = await client.sign(
+    new Request(urlBase, {
+      method: 'PUT',
+      headers: { 'Content-Type': mimeType },
+    }),
+    {
+      aws: { signQuery: true, allHeaders: true },
+    },
+  );
 
   const expiresAt = Date.now() + expiresSeconds * 1000;
 

@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { assets, projects, project_usages } from '../db/schema';
 import type { DbClient } from '../db/client';
@@ -50,7 +50,7 @@ export const initAsset = async (
   if (usedBytes + input.sizeBytes > project.quotaBytes) {
     throw new AppError({
       statusCode: 413,
-      code: 'ERR_RATE_LIMIT',
+      code: 'ERR_QUOTA_EXCEEDED',
       message: 'Quota exceeded',
       expose: true,
     });
@@ -105,7 +105,18 @@ export const confirmAsset = async (
   }
   const now = new Date();
   const sizeBytes = actualSizeBytes ?? asset.sizeBytes;
-  await (db as unknown as DbClient).update(assets).set({ status: 'validated', sizeBytes, validatedAt: now }).where(eq(assets.id, assetId));
+  const updateResult = await (db as unknown as DbClient)
+    .update(assets)
+    .set({ status: 'validated', sizeBytes, validatedAt: now })
+    .where(and(eq(assets.id, assetId), eq(assets.status, 'pending')));
+  // Drizzle D1 returns { meta: { changes } }, better-sqlite3 returns { changes }
+  const changes =
+    (updateResult as unknown as { meta?: { changes: number }; changes?: number })?.meta?.changes ??
+    (updateResult as unknown as { changes?: number })?.changes ??
+    1;
+  if (changes === 0) {
+    throw new AppError({ statusCode: 409, code: 'ERR_CONFLICT', message: `Asset ${assetId} already ${asset.status}`, expose: true });
+  }
   const [usage] = await (db as unknown as DbClient).select().from(project_usages).where(eq(project_usages.projectId, asset.projectId)).limit(1);
   if (usage) {
     await (db as unknown as DbClient)

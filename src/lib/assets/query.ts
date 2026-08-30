@@ -1,4 +1,4 @@
-import { and, desc, eq, like, lt } from 'drizzle-orm';
+import { and, desc, eq, lt, sql } from 'drizzle-orm';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { assets } from '../db/schema';
 import type { DbClient } from '../db/client';
@@ -6,6 +6,8 @@ import type { ListAssetsQuery } from '../validation/assets';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyDb = DbClient | BetterSQLite3Database<any>;
+
+const escapeLike = (s: string): string => s.replace(/[%_\\]/g, '\\$&');
 
 export const listAssets = async (db: AnyDb, query: ListAssetsQuery) => {
   const { projectId, folder, tag, q, status, cursor, limit } = query;
@@ -16,11 +18,10 @@ export const listAssets = async (db: AnyDb, query: ListAssetsQuery) => {
     conditions.push(eq(assets.folder, folder));
   }
   if (tag !== undefined) {
-    // tags stored as JSON string e.g. '["hero","dark"]' — simple LIKE for v1
-    conditions.push(like(assets.tags, `%"${tag}"%`));
+    conditions.push(sql`${assets.tags} LIKE ${`%"${escapeLike(tag)}"%`} ESCAPE '\\'`);
   }
   if (q !== undefined) {
-    conditions.push(like(assets.filename, `%${q}%`));
+    conditions.push(sql`${assets.filename} LIKE ${`%${escapeLike(q)}%`} ESCAPE '\\'`);
   }
   if (status !== undefined) {
     conditions.push(eq(assets.status, status));

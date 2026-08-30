@@ -17,11 +17,16 @@ type Variables = {
 
 const assetsRoute = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
-assetsRoute.use('*', authMiddleware);
-
-assetsRoute.get('/', zValidator('query', listAssetsQuerySchema), async (c) => {
+assetsRoute.get('/', authMiddleware, zValidator('query', listAssetsQuerySchema), async (c) => {
   const query = c.req.valid('query');
   const db = createDb(c.env.DB);
+  // Solo Control Plane: single key per fork owns all projects in this DB.
+  // Verify projectId exists to prevent enumeration of random UUIDs; within a fork all existing projects are owned.
+  const { projects } = await import('../lib/db/schema');
+  const [project] = await db.select().from(projects).where(eq(projects.id, query.projectId)).limit(1);
+  if (project === undefined) {
+    throw new AppError({ statusCode: 404, code: 'ERR_NOT_FOUND', message: `Project ${query.projectId} not found`, expose: true });
+  }
   const result = await listAssets(db, query);
   return successResponse(c, result);
 });
@@ -51,10 +56,9 @@ assetsRoute.get('/:id/content', zValidator('query', serveAssetQuerySchema), asyn
     const headers: Record<string, string> = {
       'Content-Type': asset.mimeType,
       'Cache-Control': 'public, max-age=31536000, immutable',
+      'X-Content-Type-Options': 'nosniff',
+      'Content-Disposition': 'inline',
     };
-    if (obj.httpMetadata?.contentType !== undefined) {
-      headers['Content-Type'] = obj.httpMetadata.contentType;
-    }
     if (query.width !== undefined || query.format !== undefined) {
       headers['Vary'] = 'Accept';
     }
@@ -69,7 +73,7 @@ assetsRoute.get('/:id/content', zValidator('query', serveAssetQuerySchema), asyn
   });
 });
 
-assetsRoute.delete('/:id', async (c) => {
+assetsRoute.delete('/:id', authMiddleware, async (c) => {
   const id = c.req.param('id');
   const db = createDb(c.env.DB);
   const asset = await getAssetById(db, id);

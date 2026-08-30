@@ -6,6 +6,9 @@ export const listAssetsQuerySchema = z.object({
     .string()
     .max(80)
     .regex(/^[a-z0-9/_-]*$/, 'folder may contain only a-z 0-9 / _ -')
+    .optional()
+    .transform((v) => (v !== undefined ? v.replace(/^\/+|\/+$/g, '') : v))
+    .refine((v) => v === undefined || !v.includes('//'), 'folder must not contain //')
     .optional(),
   tag: z
     .string()
@@ -13,9 +16,12 @@ export const listAssetsQuerySchema = z.object({
     .max(20)
     .regex(/^[a-z0-9_-]+$/, 'tag may contain only a-z 0-9 _ -')
     .optional(),
-  q: z.string().max(100).optional(),
+  q: z.string().trim().max(100).optional(),
   status: z.enum(['pending', 'validated', 'rejected']).optional(),
-  cursor: z.string().optional(),
+  cursor: z
+    .string()
+    .regex(/^\d+$/, 'cursor must be numeric')
+    .optional(),
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 

@@ -1,0 +1,41 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "upload-dewek",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-03-01",
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_id": "7d054bd1-99b2-4068-b8c8-aeb2cfdb9f0f",
+      "database_name": "upload_dewek_db"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "CACHE",
+      "id": "b3f38a91316246a6b40f98b11d33c032"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "ASSETS",
+      "bucket_name": "upload-dewek-assets"
+    }
+  ],
+  "images": {
+    "binding": "IMAGES"
+  },
+  "vars": {
+    "R2_BUCKET": "upload-dewek-assets"
+  },
+  "routes": [
+    {
+      "pattern": "upload-dewek.dikicodes.com",
+      "custom_domain": true
+    }
+  ]
+}
