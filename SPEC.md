@@ -1,6 +1,6 @@
 # Spec: Upload Dewek — Edge-Native DAM (Lean from Scratch)
 
-> No V1 baggage. Fresh spec under real constraints. Idea unchanged: serverless headless DAM on Cloudflare edge, zero-compute ingestion.
+> No V1 baggage. Fresh spec under real constraints. Idea: serverless headless DAM on Cloudflare edge, zero-compute ingestion, **forkable open source (BYO $0 account)** — anyone with same "gaperlu bingung naro assets dimana" can `fork → deploy` on their own Cloudflare.
 
 ## Objective
 
@@ -23,7 +23,7 @@ Whenever you start a new project: `create project di upload dewek` → optional 
 - $0 infra — too poor for Workers Paid subscription (=> no Durable Objects, no Queues)
 - 0 active users — YAGNI/KISS: ship less code, deliver business value, add complexity only after proven contention/scale
 
-**Users:** Phase 0: you (portfolio demo). Phase 1: API consumers authenticated via `api_keys` per `projects` (multi-tenant ready, but not enforced beyond key check + quota until needed).
+**Users:** Phase 0: you (portfolio demo + dogfooding). Phase 1: you + forkers — each fork is a Solo Control Plane on its own $0 Cloudflare account (single `x-api-key` per fork, `projects` for centralization). No hosted SaaS where you pay for their R2. API consumers authenticated via `api_keys` per `projects` (single key per fork v1).
 
 **V1 scrapped:** distributed Message Queues, isolated background workers, custom Wasm modules — whiteboard `v1` -> `simplified` per LinkedIn.
 
@@ -92,6 +92,10 @@ upload-dewek/
 ├── tsconfig.json
 └── package.json
 Tests: `tests/` (unit) + `e2e/` (wrangler dev) colocated or `src/**/*.test.ts`
+
+Fork DX (open):
+```
+README.md → Fork → Clone → pnpm install → wrangler login → wrangler d1 create / r2 bucket create → cp .dev.vars.example .dev.vars → pnpm db:migrate:local → pnpm dev → pnpm deploy
 ```
 
 ## Code Style
@@ -155,6 +159,7 @@ app.onError((e,c)=> c.json(toApiError(e).body, toApiError(e).statusCode));
   - Presign via `aws4fetch`, never load full AWS SDK into Worker
   - Verify upload via `R2 HEAD`, conditional `UPDATE ... WHERE status='pending'` (no DO)
   - Scope presigned URL to exact `r2Key + contentType`, 15m expiry
+  - Keep `README.md` + `.dev.vars.example` + `wrangler.jsonc` `${VAR}` forkable — no hardcoded `akbar-dzikri` ids, `LICENSE` MIT
 
 - **Ask first:**
   - Adding any `dependencies` (especially that touches bundle/CPU): `aws4fetch` already approved, next would be `nanoid`/`uuid` etc.
@@ -165,9 +170,11 @@ app.onError((e,c)=> c.json(toApiError(e).body, toApiError(e).statusCode));
 
 - **Never do:**
   - Commit secrets (`.dev.vars`, `R2_SECRET_ACCESS_KEY`, `DB_ID`) — `.gitignore` + `.dev.vars.example` only
+  - Hardcode your Cloudflare `accountId`/`DB_ID`/`R2 name` in `wrangler.jsonc` (must stay `${VAR}` for forkers)
   - Proxy binary payloads through Worker memory (must use presigned POST direct-to-R2)
   - Add `Durable Objects`, `Queues`, `Workflows`, or custom `Wasm` for image processing without explicit approval — violates $0/YAGNI
   - Use `@aws-sdk/signature-v4` or other heavy SDK in Worker
+  - Build a hosted SaaS where you pay for forkers' storage (fork is BYO account)
   - Edit `migrations/*.sql` by hand; regenerate via `pnpm db:generate`
   - Remove/skip failing tests or `any`-cast to silence `tsc`
 
@@ -181,8 +188,9 @@ app.onError((e,c)=> c.json(toApiError(e).body, toApiError(e).statusCode));
 - [ ] `POST /upload/confirm {assetId}` -> Worker `R2 HEAD` succeeds then `UPDATE ... WHERE status='pending'` flips to `validated` -> 200 `{url, variants:["?width=800&format=webp",...]}`; second concurrent confirm -> 409 `ERR_CONFLICT`; `HEAD` 404 -> 404 `ERR_NOT_FOUND`
 - [ ] `GET /assets?projectId=&folder=&tag=&q=&cursor=&limit=` with valid key -> 200 filtered/paginated by `folder`/`tags`/`q` (`LIKE`/JSON) + `GET /assets/:id/content?width=400&format=webp&quality=80` with valid key -> 200 stream from R2 with `IMAGES` transform (or 302), cache-hit on second request; quoted `quotaBytes` enforced if `project_usages.usedBytes + sizeBytes > quotaBytes` -> 429/413
 - [ ] All routes: `pnpm lint` 0 errors, `tsc --noEmit` 0 errors, `pnpm test` green (unit + `init->upload->confirm` integration against local D1/R2 + `folder/tag` filter tests), bundle < 1MB (`wrangler deploy --dry-run` size), no `@aws-sdk/*` in bundle
-- [ ] `README` + portfolio `index.mdx` accurately reflect built flow (no DO/queue/Wasm claims) and workflow `create project → folder/tag → upload → get link → use`
-- [ ] No paid bindings: `wrangler.jsonc` stays `DB/CACHE/ASSETS/IMAGES` only; deployable via `pnpm deploy --minify` on $0 account
+- [ ] `README` + portfolio `index.mdx` accurately reflect built flow (no DO/queue/Wasm claims) and workflow `create project → folder/tag → upload → get link → use` + **fork CTA** "Fork for your own $0 account"
+- [ ] `README` fork guide + `.dev.vars.example` + `LICENSE` MIT + `wrangler.jsonc` `${VAR}` allow fresh fork `pnpm install → wrangler d1/r2 create → pnpm db:migrate:local → pnpm dev` without code edit — verified by cloning to a second test account
+- [ ] No paid bindings: `wrangler.jsonc` stays `DB/CACHE/ASSETS/IMAGES` only; deployable via `pnpm deploy --minify` on $0 account (both yours and forker's)
 
 **Portfolio link stays honest:** each criterion maps to a `src/lib/...` file + test, not aspirational.
 

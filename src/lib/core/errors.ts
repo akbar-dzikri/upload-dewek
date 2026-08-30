@@ -6,6 +6,7 @@ export const ERROR_REGISTRY = {
   403: { message: 'Forbidden', code: 'ERR_FORBIDDEN' },
   404: { message: 'Not found', code: 'ERR_NOT_FOUND' },
   409: { message: 'Conflict', code: 'ERR_CONFLICT' },
+  413: { message: 'Payload too large', code: 'ERR_QUOTA_EXCEEDED' },
   422: { message: 'Validation error', code: 'ERR_VALIDATION' },
   429: { message: 'Too many requests', code: 'ERR_RATE_LIMIT' },
   500: { message: 'Something went wrong', code: 'ERR_INTERNAL' },

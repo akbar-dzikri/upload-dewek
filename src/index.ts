@@ -3,6 +3,8 @@ import { successResponse } from './lib/http/api-response';
 import { toApiError } from './lib/http/error-mapper';
 import { AppError } from './lib/core/errors';
 import projectsRoute from './routes/projects';
+import uploadsRoute from './routes/uploads';
+import assetsRoute from './routes/assets';
 
 type AppBindings = CloudflareBindings;
 type AppVariables = {
@@ -18,6 +20,8 @@ app.get('/', (c) => {
 });
 
 app.route('/projects', projectsRoute);
+app.route('/upload', uploadsRoute);
+app.route('/assets', assetsRoute);
 
 app.notFound((c) => {
   const err = new AppError({

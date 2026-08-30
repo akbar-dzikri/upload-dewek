@@ -8,5 +8,6 @@
     "lib": ["ESNext"],
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx"
-  }
+  },
+  "exclude": ["dashboard", "node_modules", "dist"]
 }

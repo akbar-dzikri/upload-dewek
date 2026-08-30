@@ -1,0 +1,16 @@
+# Copy to .dev.vars and fill with your own Cloudflare account values
+# Never commit .dev.vars — it contains secrets
+
+# R2 S3 API credentials for presigned POST (create via Cloudflare Dashboard → R2 → Manage R2 API Tokens)
+R2_ACCESS_KEY_ID=test-access-key-id-test-access-key-id-test12
+R2_SECRET_ACCESS_KEY=test-secret-access-key-test-secret-access-key-test12
+R2_BUCKET=upload-dewek-assets
+# Optional: custom R2 endpoint (defaults to https://<R2_BUCKET>.r2.cloudflarestorage.com)
+# R2_ENDPOINT=https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+
+# For local D1 you don't need DB_ID — wrangler uses --local
+# For remote, set via wrangler.jsonc vars or `wrangler secret` / dashboard
+# DB_ID=your-d1-id
+# DB_NAME=upload-dewek-db
+# CACHE_KV_ID=your-kv-id
+# ASSETS_R2_BUCKET=upload-dewek-assets

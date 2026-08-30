@@ -2,15 +2,16 @@
 
 ## Overview
 
-Build the lean DAM you defined: `create project → folder/tag → presigned POST direct to R2 (zero-compute) → confirm HEAD+UPDATE → get links (?width=&format=&quality=) → use` — centralized one-plane for all your projects, single `x-api-key`, dashboard in `portfolio-cloudflare`. YAGNI: `aws4fetch` 11kB, D1 conditional `UPDATE ... WHERE pending` not DO, flat `folder` string + `tags: string[]` JSON (no hierarchy/join), $0/128MB/10ms/0 users hard constraints. Source of truth: `SPEC.md:1` + `docs/ideas/upload-dewek.md:1`. Demo-safe + dogfoods portfolio.
+Build the lean DAM you defined: `create project → folder/tag → presigned POST direct to R2 (zero-compute) → confirm HEAD+UPDATE → get links (?width=&format=&quality=) → use` — centralized one-plane for all your projects, single `x-api-key` per fork, dashboard in `portfolio-cloudflare` for your showcase + forkable DX in `upload-dewek`. YAGNI: `aws4fetch` 11kB, D1 conditional `UPDATE ... WHERE pending` not DO, flat `folder` string + `tags: string[]` JSON, $0/128MB/10ms/0 users, **forkable open source (BYO Cloudflare account)**. Source of truth: `SPEC.md:1` + `docs/ideas/upload-dewek.md:1`. Demo-safe + dogfoods portfolio + forkers deploy their own $0.
 
 ## Architecture Decisions
 
 - **Presigned POST via `aws4fetch` over `@aws-sdk/signature-v4`** (`SPEC.md:32`): 11kB vs 300kB, stays <1MB bundle and <10ms CPU per `wrangler deploy --dry-run`.
 - **R2 HEAD + conditional `UPDATE ... WHERE status='pending'` over Durable Object** (`SPEC.md:13`): `UNIQUE(r2Key)` + `WHERE pending` is atomic for 0-1000 concurrent confirms, no Paid DO needed → keeps $0.
 - **Flat `folder?: string` + `tags?: string[]` JSON on `assets` over `tags` table** (`SPEC.md:84`): 1 column + 1 JSON field, `LIKE`/`json_each` filter covers 90% of "gaperlu bingung" organization. No join, no nested permissions until >200 assets.
-- **Single-tenant Solo Control Plane** (`docs/ideas/upload-dewek.md:11`): one `x-api-key` (hash in `api_keys`) scoped to all `projects`; dashboard filters by `?projectId=` rather than per-project key self-serve. Keeps MVP 1 week, B deferred.
-- **Dashboard in `portfolio-cloudflare` not new app**: Next.js/OpenNext route `/dashboard/assets` consumes Workers API. One deploy for dogfooding, one story for hiring, no extra worker for UI.
+- **Single-tenant Solo Control Plane per fork** (`docs/ideas/upload-dewek.md:11`): one `x-api-key` per fork (hashed in `api_keys`) scoped to all `projects` in that fork's D1; each fork = its own Solo Control Plane on its own $0 account. No SaaS where you pay for forkers.
+- **Dashboard in `portfolio-cloudflare` + forkable guide in `upload-dewek`**: Next.js/OpenNext `/dashboard/assets` is your showcase; `upload-dewek/README.md` + `.dev.vars.example` + `wrangler.jsonc` `${VAR}` is the fork path (no hardcoded ids). Forkers reuse portfolio route as template or bring own UI.
+- **Forkable BYO-Cloudflare** (`SPEC.md:1`): `fork → pnpm install → wrangler d1 create / r2 bucket create → .dev.vars → pnpm db:migrate:local → pnpm dev` must succeed without code edit; `LICENSE` MIT.
 - **Vertical slicing over horizontal**: each task delivers `schema + validation + endpoint + test (+ dashboard piece)` end-to-end, leaves system working after each slice.
 
 ## Dependency Graph
@@ -73,15 +74,17 @@ Build bottom-up; each vertical after auth can be tested via `curl` + `vitest` + 
 - [ ] Serve: `?width=800&format=webp&quality=80` returns image with `IMAGES` applied, cache hit on second, 404 for `rejected`
 - [ ] All Phase 2-3 routes covered by unit + integration (`init→confirm→list→serve→delete`) against local D1/R2
 
-### Phase 4: Dashboard — makes it demo-safe & dogfoodable (in `portfolio-cloudflare`)
+### Phase 4: Dashboard + Forkability — makes it demo-safe, dogfoodable, and forkable
 
-- [ ] Task 9: Dashboard shell + project switcher + list consumption (M)
+- [ ] Task 9: Dashboard shell + project switcher + list consumption (M) — in `portfolio-cloudflare`
 - [ ] Task 10: Dropzone `init → R2 POST → confirm` wiring + folder/tag inputs + copy optimized link + quota bar + dogfood migration (M)
+- [ ] Task 11: Forkability + open source polish — `README.md` fork guide, `.dev.vars.example`, `LICENSE` MIT, `wrangler.jsonc` `${VAR}` verification, recorded fork test (S)
 
 ### Checkpoint: Complete
 - [ ] Dashboard at `/dashboard/assets` does full workflow without opening R2 console: create project → pick folder/tags → drop → confirm → grid filtered → copy `...?width=800&format=webp` → paste in portfolio code
 - [ ] `portfolio-cloudflare/public` hero migrated to `projectId=portfolio` via this flow, `GET /assets?projectId=portfolio` returns it
-- [ ] `pnpm lint && tsc --noEmit && pnpm test` green in both repos, `SPEC.md:172` success criteria all checked, `portfolio-cloudflare/src/projects/upload-dewek/index.mdx:122` screenshot updated, deployable via `pnpm deploy --minify` on $0
+- [ ] Fork test: fresh clone on second test account `fork → pnpm install → wrangler d1 create / r2 bucket create → cp .dev.vars.example .dev.vars → pnpm db:migrate:local → pnpm dev → POST /projects → upload→confirm` succeeds with no code edit
+- [ ] `pnpm lint && tsc --noEmit && pnpm test` green in both repos, `SPEC.md:172` success criteria all checked, `portfolio-cloudflare/src/projects/upload-dewek/index.mdx:122` updated with "Fork for your own $0 account" CTA, deployable via `pnpm deploy --minify` on $0 (yours + forker's)
 
 ## Risks and Mitigations
 
@@ -93,6 +96,7 @@ Build bottom-up; each vertical after auth can be tested via `curl` + `vitest` + 
 | R2 `r2Key` collision across projects | Low — data loss/confusion | Enforce `r2Key=projects/<projectId>/<folder?>/<uuid>-<filename>` + `UNIQUE(r2Key)` + `folder` not part of key uniqueness; tested in Task 4 |
 | Dashboard built before API stable (theatre demo) | High — fake demo | Strict vertical order: Tasks 3-8 must pass `curl` integration before Task 9 starts (checkpoint gate) |
 | `wrangler dev --local` vs remote R2 drift (HEAD semantics) | Low — confirm passes local but fails remote | Integration tests run both `--local` and single real R2 head check in `confirm` handler mocked via `head` stub; manual `wrangler tail` on remote once per phase |
+| Fork guide rots / hardcoded ids break fork | Med — forker clones but `wrangler.jsonc` has your `DB_ID` | Task 11 keeps `wrangler.jsonc` `${DB_ID}/${DB_NAME}/${CACHE_KV_ID}/${ASSETS_R2_BUCKET}` placeholders, adds `.dev.vars.example` + `LICENSE`, adds CI-free fork test (second account manual); docs point to `wrangler d1 create`/`r2 bucket create` not your ids |
 
 ## Open Questions
 
@@ -101,3 +105,4 @@ Build bottom-up; each vertical after auth can be tested via `curl` + `vitest` + 
 - `tags` limit: max 5 tags, each 20 chars alphanum? Propose limit at `zValidator` to keep JSON small.
 - Public serve: private `x-api-key` required for `GET /assets/:id/content` or public via signed `?token=`? Phase 3 Task 7 will propose private first, signed later if portfolio `<img>` needs it.
 - Quota UX: hard reject 413 at `init` vs warning — hard reject v1 (clear demo), revisit if portfolio hits 1GB.
+- Fork dashboard for forkers: minimal `frontend/` SPA inside `upload-dewek` vs tell forkers to reuse `portfolio-cloudflare/src/app/dashboard/assets` template? Propose portfolio route is enough v1, forkable `frontend/` only if forkers ask (YAGNI).

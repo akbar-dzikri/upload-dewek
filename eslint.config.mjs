@@ -12,6 +12,7 @@ export default defineConfig(
       '.wrangler/**',
       'coverage/**',
       'worker-configuration.d.ts',
+      'dashboard/**',
     ],
   },
   eslint.configs.recommended,
