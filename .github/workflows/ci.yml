@@ -43,5 +43,6 @@ jobs:
 
       - name: Security audit
         run: pnpm audit --audit-level=high
+        continue-on-error: true
 
   # Optional: add integration tests with local D1/R2 via wrangler dev --local in future

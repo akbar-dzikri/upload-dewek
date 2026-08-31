@@ -10,19 +10,19 @@ importers:
     dependencies:
       '@hono/zod-validator':
         specifier: ^0.7.6
-        version: 0.7.6(hono@4.12.3)(zod@4.3.6)
+        version: 0.7.6(hono@4.12.25)(zod@4.3.6)
       aws4fetch:
         specifier: ^1.0.20
         version: 1.0.20
       drizzle-orm:
-        specifier: ^0.45.1
-        version: 0.45.1(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)
+        specifier: ^0.45.2
+        version: 0.45.2(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)
       drizzle-zod:
         specifier: ^0.8.3
-        version: 0.8.3(drizzle-orm@0.45.1(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(zod@4.3.6)
+        version: 0.8.3(drizzle-orm@0.45.2(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(zod@4.3.6)
       hono:
-        specifier: ^4.12.3
-        version: 4.12.3
+        specifier: ^4.12.25
+        version: 4.12.25
       zod:
         specifier: ^4.3.6
         version: 4.3.6
@@ -1495,8 +1495,8 @@ packages:
     resolution: {integrity: sha512-GViD3IgsXn7trFyBUUHyTFBpH/FsHTxYJ66qdbVggxef4UBPHRYxQaRzYLTuekYnk9i5FIEL9pbBIwMqX/Uwrg==}
     hasBin: true
 
-  drizzle-orm@0.45.1:
-    resolution: {integrity: sha512-Te0FOdKIistGNPMq2jscdqngBRfBpC8uMFVwqjf6gtTVJHIQ/dosgV/CLBU2N4ZJBsXL5savCba9b0YJskKdcA==}
+  drizzle-orm@0.45.2:
+    resolution: {integrity: sha512-kY0BSaTNYWnoDMVoyY8uxmyHjpJW1geOmBMdSSicKo9CIIWkSxMIj2rkeSR51b8KAPB7m+qysjuHme5nKP+E5Q==}
     peerDependencies:
       '@aws-sdk/client-rds-data': '>=3'
       '@cloudflare/workers-types': '>=4'
@@ -1739,8 +1739,8 @@ packages:
     resolution: {integrity: sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==}
     engines: {node: '>=8'}
 
-  hono@4.12.3:
-    resolution: {integrity: sha512-SFsVSjp8sj5UumXOOFlkZOG6XS9SJDKw0TbwFeV+AJ8xlST8kxK5Z/5EYa111UY8732lK2S/xB653ceuaoGwpg==}
+  hono@4.12.25:
+    resolution: {integrity: sha512-2NFaIyNVgJmBs/ecmtGzlmluTFs5cHEWGTdu0t1HBwYzoGXOL5nUQBRMXsXWla5i4KkG//QMzVP88m1+I3fdAQ==}
     engines: {node: '>=16.9.0'}
 
   ignore@5.3.2:
@@ -2705,9 +2705,9 @@ snapshots:
       '@eslint/core': 0.17.0
       levn: 0.4.1
 
-  '@hono/zod-validator@0.7.6(hono@4.12.3)(zod@4.3.6)':
+  '@hono/zod-validator@0.7.6(hono@4.12.25)(zod@4.3.6)':
     dependencies:
-      hono: 4.12.3
+      hono: 4.12.25
       zod: 4.3.6
 
   '@humanfs/core@0.19.1': {}
@@ -3238,14 +3238,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.45.1(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3):
+  drizzle-orm@0.45.2(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3):
     optionalDependencies:
       '@types/better-sqlite3': 9.6.0
       better-sqlite3: 13.0.3
 
-  drizzle-zod@0.8.3(drizzle-orm@0.45.1(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(zod@4.3.6):
+  drizzle-zod@0.8.3(drizzle-orm@0.45.2(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3))(zod@4.3.6):
     dependencies:
-      drizzle-orm: 0.45.1(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)
+      drizzle-orm: 0.45.2(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)
       zod: 4.3.6
 
   error-stack-parser-es@1.0.5: {}
@@ -3494,7 +3494,7 @@ snapshots:
 
   has-flag@4.0.0: {}
 
-  hono@4.12.3: {}
+  hono@4.12.25: {}
 
   ignore@5.3.2: {}
 

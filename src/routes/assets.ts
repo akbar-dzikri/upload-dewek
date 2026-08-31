@@ -33,6 +33,9 @@ assetsRoute.get('/', authMiddleware, zValidator('query', listAssetsQuerySchema),
 
 assetsRoute.get('/:id/content', zValidator('query', serveAssetQuerySchema), async (c) => {
   const id = c.req.param('id');
+  if (id === undefined || id === '') {
+    throw new AppError({ statusCode: 400, code: 'ERR_VALIDATION', message: 'Missing asset id', expose: true });
+  }
   const query = c.req.valid('query');
   const db = createDb(c.env.DB);
 
@@ -75,6 +78,9 @@ assetsRoute.get('/:id/content', zValidator('query', serveAssetQuerySchema), asyn
 
 assetsRoute.delete('/:id', authMiddleware, async (c) => {
   const id = c.req.param('id');
+  if (id === undefined || id === '') {
+    throw new AppError({ statusCode: 400, code: 'ERR_VALIDATION', message: 'Missing asset id', expose: true });
+  }
   const db = createDb(c.env.DB);
   const asset = await getAssetById(db, id);
   if (asset === null || asset.status === 'rejected') {
