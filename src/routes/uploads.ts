@@ -28,6 +28,7 @@ uploadsRoute.post('/init', zValidator('json', initUploadSchema), async (c) => {
   const R2_SECRET_ACCESS_KEY = envRec.R2_SECRET_ACCESS_KEY;
   const R2_BUCKET = envRec.R2_BUCKET;
   const R2_ENDPOINT = envRec.R2_ENDPOINT;
+  const R2_ACCOUNT_ID = envRec.R2_ACCOUNT_ID;
   if (R2_ACCESS_KEY_ID === undefined || R2_SECRET_ACCESS_KEY === undefined || R2_BUCKET === undefined) {
     // In tests, allow fallback via envRec test values; in prod fail closed
     const isTest = (c.env as unknown as { ENVIRONMENT?: string }).ENVIRONMENT === 'test' || R2_BUCKET === 'test-bucket';
@@ -41,6 +42,7 @@ uploadsRoute.post('/init', zValidator('json', initUploadSchema), async (c) => {
       R2_SECRET_ACCESS_KEY: R2_SECRET_ACCESS_KEY ?? 'test-secret-access-key-test-secret-access-key-test12',
       R2_BUCKET: R2_BUCKET ?? 'test-bucket',
       R2_ENDPOINT,
+      R2_ACCOUNT_ID,
     },
     asset.r2Key,
     input.mimeType,

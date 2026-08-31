@@ -11,6 +11,7 @@ export interface R2Env {
   R2_SECRET_ACCESS_KEY: string;
   R2_BUCKET: string;
   R2_ENDPOINT?: string;
+  R2_ACCOUNT_ID?: string;
 }
 
 const DEFAULT_EXPIRES = 900; // 15m
@@ -25,8 +26,12 @@ export const createPresignedPost = async (
     throw new Error('Missing R2 env: R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY / R2_BUCKET');
   }
 
-  const endpoint = env.R2_ENDPOINT ?? `https://${env.R2_BUCKET}.r2.cloudflarestorage.com`;
-  const urlBase = `${endpoint.replace(/\/$/, '')}/${r2Key}?X-Amz-Expires=${expiresSeconds}`;
+  const endpoint =
+    env.R2_ENDPOINT ??
+    (env.R2_ACCOUNT_ID ? `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com` : `https://${env.R2_BUCKET}.r2.cloudflarestorage.com`);
+  const needsBucket = !endpoint.includes(env.R2_BUCKET);
+  const bucketPrefix = needsBucket ? `/${env.R2_BUCKET}` : '';
+  const urlBase = `${endpoint.replace(/\/$/, '')}${bucketPrefix}/${r2Key}?X-Amz-Expires=${expiresSeconds}`;
 
   const client = new AwsClient({
     accessKeyId: env.R2_ACCESS_KEY_ID,
