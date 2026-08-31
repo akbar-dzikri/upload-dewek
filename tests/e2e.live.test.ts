@@ -123,7 +123,7 @@ describe.skipIf(!isE2E)('e2e live – app domain', () => {
     expect(res.status).toBe(422);
   });
 
-  it('full zero-compute flow: init → PUT → confirm → list → content → delete', async () => {
+  it('full zero-compute flow: init → PUT → confirm → list → content → delete', { timeout: 30_000 }, async () => {
     // INIT
     const initPayload = {
       projectId,
