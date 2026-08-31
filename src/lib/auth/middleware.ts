@@ -26,10 +26,16 @@ export const authMiddleware = async (
     });
   }
 
-  const keyHash = await hashApiKey(apiKey);
+  const pepper = (c.env as unknown as Record<string, string | undefined>).API_KEY_PEPPER;
+  const keyHash = await hashApiKey(apiKey, pepper);
   const db = createDb(c.env.DB);
 
-  const [row] = await db.select().from(api_keys).where(eq(api_keys.keyHash, keyHash)).limit(1);
+  let [row] = await db.select().from(api_keys).where(eq(api_keys.keyHash, keyHash)).limit(1);
+  // Backward compat: try SHA-256 without pepper if HMAC miss and pepper is set (covers seeded keys)
+  if (!row && pepper) {
+    const legacyHash = await hashApiKey(apiKey);
+    [row] = await db.select().from(api_keys).where(eq(api_keys.keyHash, legacyHash)).limit(1);
+  }
 
   if (!row) {
     throw new AppError({

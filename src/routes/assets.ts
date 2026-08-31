@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { assets, project_usages } from '../lib/db/schema';
 import { createDb } from '../lib/db/client';
@@ -87,20 +87,31 @@ assetsRoute.delete('/:id', authMiddleware, async (c) => {
     throw new AppError({ statusCode: 404, code: 'ERR_NOT_FOUND', message: `Asset ${id} not found`, expose: true });
   }
 
-  await db.update(assets).set({ status: 'rejected' }).where(eq(assets.id, id));
+  // Atomic batch for D1, sequential for test
+  const anyDb = db as unknown as { batch?: (stmts: unknown[]) => Promise<unknown> };
+  const updateAssetQuery = db.update(assets).set({ status: 'rejected' }).where(eq(assets.id, id));
+  const [usage] = await db.select().from(project_usages).where(eq(project_usages.projectId, asset.projectId)).limit(1);
+  const usageQuery =
+    usage !== undefined
+      ? db
+          .update(project_usages)
+          .set({
+            usedBytes: sql`MAX(0, ${project_usages.usedBytes} - ${asset.sizeBytes})`,
+            lastUpdated: new Date(),
+          })
+          .where(eq(project_usages.projectId, asset.projectId))
+      : null;
+
+  if (anyDb.batch && usageQuery) {
+    await anyDb.batch([updateAssetQuery, usageQuery]);
+  } else {
+    await updateAssetQuery;
+    if (usageQuery) await usageQuery;
+  }
 
   const r2Bucket = c.env.ASSETS;
   if (typeof r2Bucket.delete === 'function') {
     await r2Bucket.delete(asset.r2Key).catch(() => undefined);
-  }
-
-  const [usage] = await db.select().from(project_usages).where(eq(project_usages.projectId, asset.projectId)).limit(1);
-  if (usage !== undefined) {
-    const newUsed = Math.max(0, usage.usedBytes - asset.sizeBytes);
-    await db
-      .update(project_usages)
-      .set({ usedBytes: newUsed, lastUpdated: new Date() })
-      .where(eq(project_usages.projectId, asset.projectId));
   }
 
   return c.body(null, 204);

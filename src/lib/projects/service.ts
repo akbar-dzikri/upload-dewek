@@ -1,4 +1,4 @@
-import { desc, eq } from 'drizzle-orm';
+import { count, desc, eq } from 'drizzle-orm';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import type { DbClient } from '../db/client';
 import { projects, project_usages } from '../db/schema';
@@ -74,9 +74,8 @@ export const listProjects = async (db: AnyDb, query: { page: number; limit: numb
     .limit(limit)
     .offset(offset);
 
-  // For pagination meta we need total count - cheap COUNT(*)
-  const totalRows = await (db as unknown as DbClient).select().from(projects);
-  const totalDocs = totalRows.length;
+  // For pagination meta we need total count - cheap COUNT(*) without loading rows
+  const [{ value: totalDocs }] = await (db as unknown as DbClient).select({ value: count() }).from(projects);
   const totalPages = Math.max(1, Math.ceil(totalDocs / limit));
 
   return {

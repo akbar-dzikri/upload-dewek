@@ -12,7 +12,7 @@ export default defineConfig(
       '.wrangler/**',
       'coverage/**',
       'worker-configuration.d.ts',
-      'dashboard/**',
+      'dashboard/dist/**',
     ],
   },
   eslint.configs.recommended,
@@ -36,6 +36,17 @@ export default defineConfig(
     extends: [tseslint.configs.disableTypeChecked],
     languageOptions: {
       globals: globals.serviceworker,
+    },
+  },
+  {
+    files: ['dashboard/**/*.{ts,tsx}'],
+    extends: [tseslint.configs.disableTypeChecked],
+    languageOptions: {
+      globals: globals.browser,
+    },
+    rules: {
+      'no-console': 'off',
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
     },
   },
 );

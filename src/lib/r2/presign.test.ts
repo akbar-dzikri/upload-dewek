@@ -32,4 +32,38 @@ describe('createPresignedPost', () => {
     const result = await createPresignedPost(env, r2Key, 'image/jpeg');
     expect(result.url).toContain('test-bucket');
   });
+
+  it('uses R2_ACCOUNT_ID to build account host with bucket', async () => {
+    const r2Key = 'projects/123/file.jpg';
+    const result = await createPresignedPost({ ...env, R2_ACCOUNT_ID: 'abc123def456' }, r2Key, 'image/jpeg');
+    expect(result.url).toContain('abc123def456.r2.cloudflarestorage.com');
+    expect(result.url).toContain('test-bucket');
+    expect(result.url).toContain(r2Key);
+  });
+
+  it('uses R2_ENDPOINT with bucket already included', async () => {
+    const r2Key = 'projects/123/file.jpg';
+    const endpoint = 'https://abc123.r2.cloudflarestorage.com/test-bucket';
+    const result = await createPresignedPost({ ...env, R2_ENDPOINT: endpoint }, r2Key, 'image/jpeg');
+    expect(result.url).toContain('abc123.r2.cloudflarestorage.com/test-bucket');
+    expect(result.url).toContain(r2Key);
+    // Should not double bucket
+    expect(result.url).not.toContain('test-bucket/test-bucket');
+  });
+
+  it('uses R2_ENDPOINT account host without bucket and adds bucket', async () => {
+    const r2Key = 'projects/123/file.jpg';
+    const endpoint = 'https://abc123.r2.cloudflarestorage.com';
+    const result = await createPresignedPost({ ...env, R2_ENDPOINT: endpoint }, r2Key, 'image/jpeg');
+    expect(result.url).toContain('abc123.r2.cloudflarestorage.com/test-bucket');
+    expect(result.url).toContain(r2Key);
+  });
+
+  it('signs correct content-type header', async () => {
+    const r2Key = 'projects/123/file.jpg';
+    const result = await createPresignedPost(env, r2Key, 'image/png');
+    // SignedHeaders should include content-type
+    expect(result.url).toContain('content-type');
+    expect(result.url).toContain('X-Amz-SignedHeaders');
+  });
 });

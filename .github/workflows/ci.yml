@@ -30,7 +30,7 @@ jobs:
         run: pnpm exec tsc --noEmit
 
       - name: Test
-        run: pnpm test
+        run: pnpm run test:coverage
 
       - name: Build (Dashboard)
         run: |
@@ -41,8 +41,7 @@ jobs:
       - name: Build (Workers)
         run: pnpm exec wrangler deploy --config wrangler.deploy.jsonc --dry-run --minify
 
-      - name: Security audit
-        run: pnpm audit --audit-level=high
-        continue-on-error: true
+      - name: Security audit (prod only)
+        run: pnpm audit --prod --audit-level=high
 
   # Optional: add integration tests with local D1/R2 via wrangler dev --local in future

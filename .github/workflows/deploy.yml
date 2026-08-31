@@ -30,13 +30,22 @@ jobs:
         run: pnpm exec tsc --noEmit
 
       - name: Test
-        run: pnpm test
+        run: pnpm run test:coverage
 
       - name: Build Dashboard
         run: |
           cd dashboard
           npm ci
           npm run build
+
+      - name: Backup D1 before migrations
+        run: |
+          mkdir -p backup
+          pnpm exec wrangler d1 export upload_dewek_db --remote --config wrangler.deploy.jsonc --output backup/pre-migrate-${{ github.sha }}.sql || echo "backup export failed (non-blocking)"
+          ls -lh backup/ || true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Apply D1 migrations (remote)
         run: pnpm exec wrangler d1 migrations apply upload_dewek_db --remote --config wrangler.deploy.jsonc
@@ -50,10 +59,41 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-      - name: Verify health
+      - name: Verify health (retry + JSON check)
         run: |
-          sleep 10
-          curl -f https://upload-dewek.dikicodes.com/health || curl -f https://upload-dewek.akbardzkr05.workers.dev/health
+          for i in 1 2 3 4 5; do
+            echo "Attempt $i/5: checking https://upload-dewek.dikicodes.com/health"
+            if curl -fsS https://upload-dewek.dikicodes.com/health | grep -q '"status":"ok"'; then
+              echo "Health OK on custom domain"
+              break
+            fi
+            echo "Custom domain not ready, trying workers.dev..."
+            if curl -fsS https://upload-dewek.akbardzkr05.workers.dev/health | grep -q '"status":"ok"'; then
+              echo "Health OK on workers.dev"
+              break
+            fi
+            if [ $i -eq 5 ]; then
+              echo "Health check failed after 5 attempts"
+              exit 1
+            fi
+            sleep 5
+          done
+          curl -fsS https://upload-dewek.dikicodes.com/health | python3 -m json.tool
+          curl -fsS https://upload-dewek.dikicodes.com/healthz | grep -q ok && echo "healthz ok"
+
+      - name: E2E live via app domain
+        run: E2E_BASE_URL=https://upload-dewek.dikicodes.com E2E_API_KEY=ud_local_test_key_12345 pnpm exec vitest run tests/e2e.live.test.ts --reporter=verbose
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "::error::Deploy failed — rollback required"
+          echo "1) Disable via Cloudflare dashboard or wrangler rollback"
+          echo "2) D1 backup: backup/pre-migrate-${{ github.sha }}.sql (restore via wrangler d1 execute --file or d1 import)"
+          echo "3) Revert commit: git revert ${{ github.sha }} && git push"
 
       - name: Deploy Dashboard (optional, via Pages)
         if: false # enable when dashboard is ready for Pages

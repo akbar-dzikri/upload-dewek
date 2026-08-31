@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { assets, projects, project_usages } from '../db/schema';
 import type { DbClient } from '../db/client';
@@ -105,26 +105,36 @@ export const confirmAsset = async (
   }
   const now = new Date();
   const sizeBytes = actualSizeBytes ?? asset.sizeBytes;
-  const updateResult = await (db as unknown as DbClient)
+  // Atomic: update asset status + increment usage in batch (D1) / transaction (sqlite)
+  const anyDb = db as unknown as { batch?: (stmts: unknown[]) => Promise<unknown[]> };
+  const updateAssetQuery = (db as unknown as DbClient)
     .update(assets)
     .set({ status: 'validated', sizeBytes, validatedAt: now })
     .where(and(eq(assets.id, assetId), eq(assets.status, 'pending')));
+
+  const [usage] = await (db as unknown as DbClient).select().from(project_usages).where(eq(project_usages.projectId, asset.projectId)).limit(1);
+  const usageQuery = usage
+    ? (db as unknown as DbClient)
+        .update(project_usages)
+        .set({ usedBytes: sql`${project_usages.usedBytes} + ${sizeBytes}`, lastUpdated: now })
+        .where(eq(project_usages.projectId, asset.projectId))
+    : (db as unknown as DbClient).insert(project_usages).values({ projectId: asset.projectId, usedBytes: sizeBytes, lastUpdated: now });
+
+  let updateResult: unknown;
+  if (anyDb.batch) {
+    const results = await anyDb.batch([updateAssetQuery, usageQuery]);
+    updateResult = results[0];
+  } else {
+    updateResult = await updateAssetQuery;
+    await usageQuery;
+  }
   // Drizzle D1 returns { meta: { changes } }, better-sqlite3 returns { changes }
   const changes =
-    (updateResult as unknown as { meta?: { changes: number }; changes?: number })?.meta?.changes ??
-    (updateResult as unknown as { changes?: number })?.changes ??
+    (updateResult as { meta?: { changes: number }; changes?: number })?.meta?.changes ??
+    (updateResult as { changes?: number })?.changes ??
     1;
   if (changes === 0) {
     throw new AppError({ statusCode: 409, code: 'ERR_CONFLICT', message: `Asset ${assetId} already ${asset.status}`, expose: true });
-  }
-  const [usage] = await (db as unknown as DbClient).select().from(project_usages).where(eq(project_usages.projectId, asset.projectId)).limit(1);
-  if (usage) {
-    await (db as unknown as DbClient)
-      .update(project_usages)
-      .set({ usedBytes: usage.usedBytes + sizeBytes, lastUpdated: now })
-      .where(eq(project_usages.projectId, asset.projectId));
-  } else {
-    await (db as unknown as DbClient).insert(project_usages).values({ projectId: asset.projectId, usedBytes: sizeBytes, lastUpdated: now });
   }
   return { id: asset.id, r2Key: asset.r2Key, status: 'validated' };
 };

@@ -22,7 +22,15 @@ app.use(
   cors({
     origin: (origin) => {
       if (origin === undefined || origin === '') return '';
-      if (origin.endsWith('dikicodes.com') || origin.includes('localhost:5173') || origin.includes('localhost:8787')) return origin;
+      try {
+        const u = new URL(origin);
+        const hostname = u.hostname;
+        const isDiki = hostname === 'dikicodes.com' || hostname.endsWith('.dikicodes.com');
+        const isLocal = hostname === 'localhost' && (u.port === '5173' || u.port === '8787');
+        if (isDiki || isLocal) return origin;
+      } catch {
+        // invalid URL
+      }
       return '';
     },
     allowHeaders: ['Content-Type', 'x-api-key'],

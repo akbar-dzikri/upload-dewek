@@ -1,5 +1,6 @@
 import type { Context, Next } from 'hono';
 import { AppError } from './core/errors';
+import { hashApiKey } from './auth/hash';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const rateLimit = async (c: Context<any>, next: Next, limit = 60, windowSec = 60): Promise<void> => {
@@ -8,7 +9,9 @@ export const rateLimit = async (c: Context<any>, next: Next, limit = 60, windowS
     await next();
     return;
   }
-  const key = c.req.header('x-api-key') ?? c.req.header('CF-Connecting-IP') ?? 'anon';
+  const rawKey = c.req.header('x-api-key') ?? c.req.header('CF-Connecting-IP') ?? 'anon';
+  // Hash API keys to avoid leaking raw keys in KV keys
+  const key = rawKey.startsWith('ud_') ? (await hashApiKey(rawKey)).slice(0, 16) : rawKey;
   const bucket = Math.floor(Date.now() / (windowSec * 1000));
   const kvKey = `rl:${key}:${bucket}`;
   const current = parseInt((await kv.get(kvKey)) ?? '0', 10);
