@@ -32,6 +32,12 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Build Dashboard
+        run: |
+          cd dashboard
+          npm ci
+          npm run build
+
       - name: Apply D1 migrations (remote)
         run: pnpm exec wrangler d1 migrations apply upload_dewek_db --remote --config wrangler.deploy.jsonc
         env:
