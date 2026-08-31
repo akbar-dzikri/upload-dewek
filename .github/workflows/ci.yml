@@ -32,14 +32,14 @@ jobs:
       - name: Test
         run: pnpm test
 
-      - name: Build (Workers)
-        run: pnpm exec wrangler deploy --config wrangler.deploy.jsonc --dry-run --minify
-
       - name: Build (Dashboard)
         run: |
           cd dashboard
           npm ci
           npm run build
+
+      - name: Build (Workers)
+        run: pnpm exec wrangler deploy --config wrangler.deploy.jsonc --dry-run --minify
 
       - name: Security audit
         run: pnpm audit --audit-level=high
