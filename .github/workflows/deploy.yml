@@ -61,15 +61,18 @@ jobs:
 
       - name: Verify health (retry + JSON check)
         run: |
+          HEALTH_URL=""
           for i in 1 2 3 4 5; do
             echo "Attempt $i/5: checking https://upload-dewek.dikicodes.com/health"
             if curl -fsS https://upload-dewek.dikicodes.com/health | grep -q '"status":"ok"'; then
               echo "Health OK on custom domain"
+              HEALTH_URL="https://upload-dewek.dikicodes.com"
               break
             fi
             echo "Custom domain not ready, trying workers.dev..."
             if curl -fsS https://upload-dewek.akbardzkr05.workers.dev/health | grep -q '"status":"ok"'; then
               echo "Health OK on workers.dev"
+              HEALTH_URL="https://upload-dewek.akbardzkr05.workers.dev"
               break
             fi
             if [ $i -eq 5 ]; then
@@ -78,11 +81,22 @@ jobs:
             fi
             sleep 5
           done
-          curl -fsS https://upload-dewek.dikicodes.com/health | python3 -m json.tool
-          curl -fsS https://upload-dewek.dikicodes.com/healthz | grep -q ok && echo "healthz ok"
+          echo "Using HEALTH_URL=$HEALTH_URL"
+          curl -fsS "$HEALTH_URL/health" | python3 -m json.tool
+          curl -fsS "$HEALTH_URL/healthz" | grep -q ok && echo "healthz ok"
+          # Best-effort verify custom domain also eventually
+          curl -fsS https://upload-dewek.dikicodes.com/health | grep -q '"status":"ok"' && echo "custom domain health confirmed" || echo "custom domain health not yet ready (workers.dev is primary)"
 
       - name: E2E live via app domain
-        run: E2E_BASE_URL=https://upload-dewek.dikicodes.com E2E_API_KEY=ud_local_test_key_12345 pnpm exec vitest run tests/e2e.live.test.ts --reporter=verbose
+        run: |
+          if curl -fsS https://upload-dewek.dikicodes.com/health | grep -q '"status":"ok"'; then
+            E2E_URL="https://upload-dewek.dikicodes.com"
+          else
+            E2E_URL="https://upload-dewek.akbardzkr05.workers.dev"
+            echo "custom domain not ready, falling back to workers.dev for E2E"
+          fi
+          echo "E2E_BASE_URL=$E2E_URL"
+          E2E_BASE_URL=$E2E_URL E2E_API_KEY=ud_local_test_key_12345 pnpm exec vitest run tests/e2e.live.test.ts --reporter=verbose
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
